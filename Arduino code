@@ -1,0 +1,131 @@
+#include <SoftwareSerial.h>
+SoftwareSerial gsmSerial(9, 5); //RX, TX
+#define trigPin1 A0
+#define echoPin1 A1
+#define trigPin2 A2
+#define echoPin2 A3
+#define trigPin3 A4
+#define echoPin3 A5
+int ALARM = 7;
+long duration, distance, FIRSTSensor,SECONDSensor,THIRDSensor;
+// Digital pin 8 will be called 'pin8'
+int pin8 = 2;
+// Analog pin 0 will be called 'sensor'
+int sensor = 3;
+// Set the initial sensorValue to 0
+int sensorValue = 0;
+
+void setup()
+{
+Serial.begin (9600);
+pinMode(trigPin1, OUTPUT);
+pinMode(echoPin1, INPUT);
+pinMode(trigPin2, OUTPUT);
+pinMode(echoPin2, INPUT);
+pinMode(trigPin3, OUTPUT);
+pinMode(echoPin3, INPUT);
+pinMode(ALARM, OUTPUT);
+digitalWrite(ALARM, LOW);
+}
+
+void loop() 
+{
+SonarSensor(trigPin1, echoPin1);
+FIRSTSensor = distance;
+SonarSensor(trigPin2, echoPin2);
+SECONDSensor = distance;
+SonarSensor(trigPin3, echoPin3);
+THIRDSensor = distance;
+
+
+}
+
+void SonarSensor(int trigPin,int echoPin)
+{
+digitalWrite(trigPin, LOW);
+delayMicroseconds(2);
+digitalWrite(trigPin, HIGH);
+delayMicroseconds(10);
+digitalWrite(trigPin, LOW);
+duration = pulseIn(echoPin, HIGH);
+distance = (duration/2) / 29.1;
+Serial.print("S1:");Serial.println(FIRSTSensor); delayMicroseconds(10);
+Serial.print("S2:");Serial.println(SECONDSensor);delayMicroseconds(10);
+Serial.print("S3:");Serial.println(THIRDSensor); delayMicroseconds(10);
+if(FIRSTSensor<=10 && SECONDSensor<=10 && THIRDSensor<=10)
+{
+  Serial.print("block at s3\n");
+}
+else if (FIRSTSensor<=10 && SECONDSensor<=10 && THIRDSensor>=10)
+{
+  Serial.print("block between s2 and s3\n");
+}
+else if(FIRSTSensor<=10 && SECONDSensor>=10 && THIRDSensor>=10)
+{
+  Serial.print("block between s1 and s2\n");
+}
+else
+{
+  Serial.print("no block\n");
+}
+
+setup1();
+}
+
+void setup1()
+{
+   gsmSerial.begin(9600); // Setting the baud rate of GSM Module
+   Serial.begin(9600);    // Setting the baud rate of Serial Monitor (Arduino)
+   delay(1000);
+   Serial.println("Preparing to send SMS");
+   Serial.println("Setting the GSM in text mode");
+   gsmSerial.println("AT+CMGF=1\r");
+   delay(20);
+   Serial.println("Sending SMS to the desired phone number!");
+   gsmSerial.println("AT+CMGS=\"+917871716122\"\r");
+   // Replace x with mobile number
+   delay(20);
+   if(FIRSTSensor<=20 && SECONDSensor<=20 && THIRDSensor<=20)
+      {
+        gsmSerial.println("block at s3\n");
+        gsmSerial.println("area : villapuram");
+      }
+   else if (FIRSTSensor<=20 && SECONDSensor<=20 && THIRDSensor>=20)
+      {
+        gsmSerial.println("block between s2 and s3\n");
+        gsmSerial.println("area: villapuram");
+      }
+   else if(FIRSTSensor<=20 && SECONDSensor>=20 && THIRDSensor>=20)
+      {
+        gsmSerial.println("block between s1 and s2\n");
+        gsmSerial.println("area : villapuram");
+      }
+   else 
+   {
+        gsmSerial.println("no block");
+   }   // SMS Text
+   delay(20000);
+   gsmSerial.println((char)26);               // ASCII code of CTRL+Z
+   delay(20);
+   setup2();
+}
+
+void setup2() {
+  // Initialize the digital pin 8 as an output
+  pinMode(pin8, OUTPUT);
+  // Initialize serial communication at 9600 bits per second
+  Serial.begin(9600);
+  sensorValue = analogRead(sensor);
+  // Print out the value you read
+  Serial.println(sensorValue, DEC);
+  gsmSerial.println(sensorValue, DEC);
+  if(sensorValue>=2000)//ppm
+  {
+    Serial.print("danger\n\n\n\n\n\n");
+  }
+  else{
+    Serial.print("normal\n\n\n\n\n");
+  }
+  delay(200);
+
+}
